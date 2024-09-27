@@ -1,9 +1,9 @@
 import random
 import operator
 import itertools
-import re  # 用于从输入中提取数字
+import re  # Used to extract numbers from the input
 
-# 定义运算符
+#  Define operators
 ops = {
     '+': operator.add,
     '-': operator.sub,
@@ -11,7 +11,7 @@ ops = {
     '/': operator.truediv
 }
 
-#规则讲解
+# Explanation of the rules
 def print_rules():
     print("Welcome to the Interactive Math Calculation Game!")
     print("Game Rules:")
@@ -24,12 +24,12 @@ def print_rules():
     print("7. Use '==' to represent the equality check (e.g., '3 + 2 == 5'). It checks if the two sides of the equation are equal.\n")
 
 
-# 优先级比较函数，决定是否需要添加括号
+# Function to determine if parentheses are needed based on operator precedence
 def needs_parentheses(prev_op, current_op):
     precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
     return precedence[current_op] > precedence[prev_op]
 
-# 将数字和运算符转化为带括号的表达式
+# Convert numbers and operators into an expression with parentheses if needed
 def format_expression(operators, nums):
     expression = str(nums[0])
     for i in range(1, len(nums)):
@@ -38,18 +38,18 @@ def format_expression(operators, nums):
         expression += f" {operators[i-1]} {nums[i]}"
     return expression
 
-# 生成随机数字
+# Generate random numbers
 def generate_numbers(count, min_number, max_number):
     return [random.randint(min_number, max_number) for _ in range(count)]
 
-# 根据运算符生成表达式并检查是否满足等式，确保数字不重复使用
+# Generate an expression with operators and check if it satisfies the equation, ensuring numbers are not reused
 def find_solution(nums):
     num_operators = len(nums) - 1
     for operators in itertools.product(ops.keys(), repeat=num_operators):
-        # 生成所有可能的数字排列，确保每个数字只使用一次
+        # Generate all possible number permutations, ensuring each number is used only once
         for perm_nums in itertools.permutations(nums):
             try:
-                # 将数字和运算符分配到左右两部分
+                # Assign numbers and operators to the left and right parts of the equation
                 for split_point in range(1, len(perm_nums)):
                     left_expr = str(perm_nums[0])
                     for i in range(1, split_point):
@@ -59,23 +59,23 @@ def find_solution(nums):
                     for i in range(split_point + 1, len(perm_nums)):
                         right_expr += f" {operators[i-1]} {perm_nums[i]}"
                     
-                    # 计算左右两部分
+                    # Evaluate both sides of the equation
                     if eval(left_expr) == eval(right_expr):
                         return f"{left_expr} == {right_expr}"
             except ZeroDivisionError:
-                continue  # 避免除以0的情况
+                continue  # Avoid division by zero
             except:
-                continue  # 忽略其他异常
+                continue  # Ignore other exceptions
 
     return None
 
 
-# 从用户输入中提取使用的数字和运算符
+# Extract the numbers and operators from the user's input
 def extract_numbers_from_input(user_input):
-    # 使用正则表达式提取所有数字，支持负数和浮点数
+    # # Use regex to extract all numbers, supporting negative numbers and floats
     return [float(num) for num in re.findall(r'-?\d+\.?\d*', user_input)]
 
-# 确保生成的数字集合有解，且每个数字只能用一次
+# Ensure the generated set of numbers has a solution, and each number is used only once
 def generate_valid_numbers(count, min_number, max_number):
     while True:
         numbers = generate_numbers(count, min_number, max_number)
@@ -84,14 +84,14 @@ def generate_valid_numbers(count, min_number, max_number):
             return numbers, solution
 
 
-# 游戏主循环
+# Main game loop
 def main():
-     # 讲解规则
+     # Explain the rules
     print_rules()
 
     play_again = True
     while play_again:
-        # 获取用户输入的数字数量
+        # Get the number of numbers from the user
         try:
             num_count = int(input("Enter the number of numbers to generate for the equation (e.g., 4): "))
             if num_count < 2:
@@ -100,7 +100,7 @@ def main():
             print(f"Invalid input: {e}")
             continue
 
-        # 获取用户输入的数字范围
+        # Get the range of numbers from the user
         try:
             min_number = int(input("Enter the minimum number for the range: "))
             max_number = int(input("Enter the maximum number for the range: "))
@@ -110,7 +110,7 @@ def main():
             print(f"Invalid input: {e}")
             continue
 
-        # 生成数字和对应的解
+        # Generate numbers and the corresponding solution
         numbers, solution = generate_valid_numbers(num_count, min_number, max_number)
         print("\nGenerated numbers:", numbers)
         print("\nou can use the following operators:")
@@ -120,21 +120,21 @@ def main():
         print(" '/' for division")
         print(" '==' to check if the two sides of the equation are equal (e.g., '3 + 2 == 5')\n")
 
-        # 提供尝试次数
+        # Provide a limited number of attempts
         attempts = 0
         max_attempts = 3
         while attempts < max_attempts:
-            # 获取用户输入的等式
+            # # Get the user's equation input
             user_equation = input("Enter your equation using the numbers and operators provided: ")
 
-            # 检查用户是否使用了所有生成的数字和运算符
+            # Check if the user used all the generated numbers and operators
             def check_user_input(user_numbers, user_operators, generated_numbers, generated_operators):
-                # 检查是否使用了所有数字
+                # Check if all numbers were used
                 if sorted(user_numbers) != sorted(generated_numbers):
                     return False, "You must use all the generated numbers."
 
          
-            # 检查用户输入的等式是否正确
+            # Check if the user's equation is correct
             try:
                 if eval(user_equation):
                     print("Congratulations, the equation is correct!")
@@ -150,7 +150,7 @@ def main():
                 if show_hint == 'yes':
                     print(f"The correct equation is: {solution}")
 
-        # 询问用户是否继续游戏
+        # Ask the user if they want to play again
         play_again_input = input("\nDo you want to play again? (yes/no): ").strip().lower()
         play_again = play_again_input == 'yes'
 
