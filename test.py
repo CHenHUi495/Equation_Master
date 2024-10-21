@@ -4,7 +4,7 @@ from unittest.mock import patch
 import re  # If needed for extracting numbers
 
 # Import functions from EquationMaster
-from EquationMaster import generate_numbers, find_solution, extract_numbers_from_input, generate_valid_numbers, format_expression, main
+from EquationMaster import *
 
 
 class TestInteractiveMathGame(unittest.TestCase):
@@ -52,6 +52,28 @@ class TestInteractiveMathGame(unittest.TestCase):
         self.assertIn("Congratulations, the equation is correct!", output)
 
     @patch('builtins.input', side_effect=['4', '1', '10', '3 + 3 == 5', '3 + 3 == 5', '3 + 3 == 5', 'yes', 'no'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_game_failure(self, mock_stdout, mock_input):
+        """Test the main game flow with an incorrect user input, then asking for the solution."""
+        main()
+        output = mock_stdout.getvalue()
+        self.assertIn("The correct equation is:", output)
+    def test_unsafe_expression(self):
+        """Test for unsafe expressions with code injection attempts."""
+        unsafe_expression = "3 + 3 == print('hacked')"
+        with self.assertRaises(ValueError) as context:
+            parse_and_calculate(unsafe_expression)
+        self.assertIn("Invalid characters in expression", str(context.exception))
+
+    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 2 == 5','no'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_game_success(self, mock_stdout, mock_input):
+        """Test the main game flow with a correct user input."""
+        main()
+        output = mock_stdout.getvalue()
+        self.assertIn("Congratulations, the equation is correct!", output)
+
+    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 3 == 5','3 + 3 == 5','3 + 3 == 5', 'yes', 'no'])
     @patch('sys.stdout', new_callable=StringIO)
     def test_main_game_failure(self, mock_stdout, mock_input):
         """Test the main game flow with an incorrect user input, then asking for the solution."""
