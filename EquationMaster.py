@@ -11,6 +11,58 @@ ops = {
     '/': operator.truediv
 }
 
+#Define allowed operators 
+allowed_operators = {
+    '+': operator.add,
+    '-': operator.sub,
+    '*': operator.mul,
+    '/': operator.truediv
+}
+
+#解析和计算简单的数学表达式，不使用 eval。仅支持 +, -, *, / 四种操作符。
+def parse_and_calculate(equation):
+    # 验证表达式是否仅包含数字、空格和支持的操作符（包括'=='）
+    if not re.match(r'^[\d\s\+\-\*/=]+$', equation):
+        raise ValueError("Invalid characters in expression")
+    
+    # 确保表达式包含 '==' 来进行比较
+    if '==' not in equation:
+        raise ValueError("Expression must include '==' for comparison")
+
+    # 分割左右两侧的表达式
+    left_expr, right_expr = equation.split('==')
+    
+    # 计算左右两侧的值
+    left_value = simple_calculate(left_expr.strip())
+    right_value = simple_calculate(right_expr.strip())
+
+    # 返回比较结果
+    return left_value == right_value
+
+# 计算不带比较的简单数学表达式。
+def simple_calculate(expr):
+    # 分割表达式中的数字和操作符
+    tokens = re.split(r'(\D)', expr)
+    # 移除空白字符
+    tokens = [t.strip() for t in tokens if t.strip()]
+
+    # 将第一个数字初始化为结果
+    result = float(tokens.pop(0))
+
+    # 遍历剩余的操作符和数字
+    while tokens:
+        operator_symbol = tokens.pop(0)
+        next_number = float(tokens.pop(0))
+        
+        # 获取操作符并执行相应的运算
+        if operator_symbol in allowed_operators:
+            result = allowed_operators[operator_symbol](result, next_number)
+        else:
+            raise ValueError(f"Unsupported operator: {operator_symbol}")
+
+    return result
+
+
 # Explanation of the rules
 def print_rules():
     print("Welcome to the Interactive Math Calculation Game!")
@@ -142,13 +194,14 @@ def main():
          
             # Check if the user's equation is correct
             try:
-                if eval(user_equation):
+                if parse_and_calculate(user_equation):
                     print("Congratulations, the equation is correct!")
                     break
                 else:
                     print("The equation is incorrect or not valid. Please try again.")
             except Exception as e:
                 print(f"Error in equation: {e}. Please try again.")
+
 
             attempts += 1
             if attempts == max_attempts:
