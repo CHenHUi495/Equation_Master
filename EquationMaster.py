@@ -24,19 +24,20 @@ def print_rules():
     print("7. Use '==' to represent the equality check (e.g., '3 + 2 == 5'). It checks if the two sides of the equation are equal.\n")
 
 
-# Function to determine if parentheses are needed based on operator precedence
-def needs_parentheses(prev_op, current_op):
-    precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
-    return precedence[current_op] > precedence[prev_op]
 
 # Convert numbers and operators into an expression with parentheses if needed
 def format_expression(operators, nums):
+    # Start with the first number in the list
     expression = str(nums[0])
+
+    # Iterate through the rest of the numbers and operators, forming the expression without parentheses
     for i in range(1, len(nums)):
-        if i > 1 and needs_parentheses(operators[i-2], operators[i-1]):
-            expression = f"({expression})"
+        # Append the current operator and number to the expression
         expression += f" {operators[i-1]} {nums[i]}"
+
     return expression
+
+
 
 # Generate random numbers
 def generate_numbers(count, min_number, max_number):
@@ -49,18 +50,21 @@ def find_solution(nums):
         # Generate all possible number permutations, ensuring each number is used only once
         for perm_nums in itertools.permutations(nums):
             try:
-                # Assign numbers and operators to the left and right parts of the equation
+                # Calculate the result without adding parentheses
                 for split_point in range(1, len(perm_nums)):
-                    left_expr = str(perm_nums[0])
+                    left_value = perm_nums[0]
                     for i in range(1, split_point):
-                        left_expr += f" {operators[i-1]} {perm_nums[i]}"
+                        left_value = ops[operators[i-1]](left_value, perm_nums[i])
                     
-                    right_expr = str(perm_nums[split_point])
+                    right_value = perm_nums[split_point]
                     for i in range(split_point + 1, len(perm_nums)):
-                        right_expr += f" {operators[i-1]} {perm_nums[i]}"
+                        right_value = ops[operators[i-1]](right_value, perm_nums[i])
                     
-                    # Evaluate both sides of the equation
-                    if eval(left_expr) == eval(right_expr):
+                    # Check if the results are equal
+                    if left_value == right_value:
+                        # Format the expression for display purposes
+                        left_expr = format_expression(operators[:split_point-1], perm_nums[:split_point])
+                        right_expr = format_expression(operators[split_point-1:], perm_nums[split_point:])
                         return f"{left_expr} == {right_expr}"
             except ZeroDivisionError:
                 continue  # Avoid division by zero
@@ -68,6 +72,8 @@ def find_solution(nums):
                 continue  # Ignore other exceptions
 
     return None
+
+
 
 
 # Extract the numbers and operators from the user's input
