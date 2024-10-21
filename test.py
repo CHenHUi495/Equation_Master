@@ -1,47 +1,65 @@
-pip install pytest
-# math_operations.py
+import unittest
+from io import StringIO
+from unittest.mock import patch
+import re  # If needed for extracting numbers
 
-def add(a, b):
-    return a + b
+# Import functions from EquationMaster
+from EquationMaster import generate_numbers, find_solution, extract_numbers_from_input, generate_valid_numbers, format_expression, main
 
-def subtract(a, b):
-    return a - b
 
-def multiply(a, b):
-    return a * b
+class TestInteractiveMathGame(unittest.TestCase):
+    def test_generate_numbers(self):
+        """Test the generation of random numbers within a specified range."""
+        numbers = generate_numbers(4, 1, 10)
+        self.assertEqual(len(numbers), 4)
+        for number in numbers:
+            self.assertTrue(1 <= number <= 10)
 
-def divide(a, b):
-    if b == 0:
-        raise ValueError("Cannot divide by zero!")
-    return a / b
-# test_math_operations.py
+    def test_find_solution(self):
+        """Test finding a solution for a simple set of numbers."""
+        numbers = [3, 1, 2, 5]
+        solution = find_solution(numbers)
+        self.assertIsNotNone(solution)
+        # Ensure the solution is formatted correctly with equality
+        self.assertIn('==', solution)
 
-import pytest
-from math_operations import add, subtract, multiply, divide
+    def test_extract_numbers_from_input(self):
+        """Test extracting numbers from a user-provided string."""
+        user_input = "3 + 1 == 4"
+        extracted_numbers = extract_numbers_from_input(user_input)
+        self.assertEqual(extracted_numbers, [3, 1, 4])
 
-# 测试加法
-def test_add():
-    assert add(3, 2) == 5
-    assert add(-1, 1) == 0
-    assert add(0, 0) == 0
+    def test_generate_valid_numbers(self):
+        """Test generating a set of numbers with a guaranteed solution."""
+        numbers, solution = generate_valid_numbers(4, 1, 10)
+        self.assertEqual(len(numbers), 4)
+        self.assertIsNotNone(solution)
 
-# 测试减法
-def test_subtract():
-    assert subtract(10, 5) == 5
-    assert subtract(0, 0) == 0
-    assert subtract(-1, 1) == -2
 
-# 测试乘法
-def test_multiply():
-    assert multiply(3, 3) == 9
-    assert multiply(-1, 1) == -1
-    assert multiply(0, 100) == 0
+    def test_format_expression(self):
+        """Test the correct formatting of expressions with and without parentheses."""
+        operators = ['+', '*']
+        nums = [2, 3, 4]
+        formatted_expression = format_expression(operators, nums)
+        self.assertEqual(formatted_expression, "2 + 3 * 4")
 
-# 测试除法
-def test_divide():
-    assert divide(10, 2) == 5
-    assert divide(3, 1) == 3
-    with pytest.raises(ValueError):  # 检查是否抛出异常
-        divide(10, 0)
-pytest
-pytest -v
+    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 2 == 5', 'no'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_game_success(self, mock_stdout, mock_input):
+        """Test the main game flow with a correct user input."""
+        main()
+        output = mock_stdout.getvalue()
+        self.assertIn("Congratulations, the equation is correct!", output)
+
+    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 3 == 5', '3 + 3 == 5', '3 + 3 == 5', 'yes', 'no'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_game_failure(self, mock_stdout, mock_input):
+        """Test the main game flow with an incorrect user input, then asking for the solution."""
+        main()
+        output = mock_stdout.getvalue()
+        self.assertIn("The correct equation is:", output)
+
+
+
+if __name__ == "__main__":
+    unittest.main()
