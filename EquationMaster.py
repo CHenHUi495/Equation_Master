@@ -2,6 +2,8 @@ import random
 import operator
 import itertools
 import re  # Used to extract numbers from the input
+import ast  # Used to safely parse expressions without eval
+import time  # 用于控制函数执行时间
 
 # Define operators
 ops = {
@@ -14,7 +16,7 @@ ops = {
 # 解析和计算简单的数学表达式，不使用 eval。仅支持 +, -, *, / 四种操作符。
 def parse_and_calculate(equation):
     # 验证表达式是否仅包含数字、空格和支持的操作符（包括'=='）
-    if not re.match(r'^[\d\s\+\-\*/=]+$', equation):
+    if not re.match(r'^[\d\s\+\-\*/\(\)=]+$', equation):
         raise ValueError("Invalid characters in expression")
     
     # 确保表达式包含 '==' 来进行比较
@@ -25,35 +27,40 @@ def parse_and_calculate(equation):
     left_expr, right_expr = equation.split('==')
     
     # 计算左右两侧的值
-    left_value = simple_calculate(left_expr.strip())
-    right_value = simple_calculate(right_expr.strip())
+    left_value = evaluate_expression(left_expr.strip())
+    right_value = evaluate_expression(right_expr.strip())
 
     # 返回比较结果
     return left_value == right_value
 
-# 计算不带比较的简单数学表达式。
-def simple_calculate(expr):
-    # 分割表达式中的数字和操作符
-    tokens = re.split(r'([\+\-\*/])', expr)
-    # 移除空白字符
-    tokens = [t.strip() for t in tokens if t.strip()]
+# 计算带括号的数学表达式。
+def evaluate_expression(expr):
+    try:
+        # 使用 ast.literal_eval 安全地解析表达式
+        node = ast.parse(expr, mode='eval').body
+        return evaluate_ast(node)
+    except (SyntaxError, ValueError, TypeError):
+        raise ValueError("Invalid mathematical expression")
 
-    # 将第一个数字初始化为结果
-    result = float(tokens.pop(0))
-
-    # 遍历剩余的操作符和数字
-    while tokens:
-        operator_symbol = tokens.pop(0)
-        next_number = float(tokens.pop(0))
-        
-        # 获取操作符并执行相应的运算
-        if operator_symbol in ops:
-            result = ops[operator_symbol](result, next_number)
-        else:
-            raise ValueError(f"Unsupported operator: {operator_symbol}")
-
-    return result
-
+# 递归计算 AST 节点值
+def evaluate_ast(node):
+    if isinstance(node, ast.BinOp):
+        left = evaluate_ast(node.left)
+        right = evaluate_ast(node.right)
+        if isinstance(node.op, ast.Add):
+            return left + right
+        elif isinstance(node.op, ast.Sub):
+            return left - right
+        elif isinstance(node.op, ast.Mult):
+            return left * right
+        elif isinstance(node.op, ast.Div):
+            if right == 0:
+                raise ZeroDivisionError("division by zero")
+            return left / right
+    elif isinstance(node, ast.Constant):
+        return node.value
+    else:
+        raise ValueError("Unsupported expression")
 
 # Explanation of the rules
 def print_rules():
@@ -65,8 +72,8 @@ def print_rules():
     print("4. For example, if given numbers are 3, 1, 3, and 5, you can form an equation like '3 - 1 + 3 == 5'.")
     print("5. You must use the operators to make the equation correct.")
     print("6. Operators to use: '+' for addition, '-' for subtraction, '*' for multiplication, '/' for division.")
-    print("7. Use '==' to represent the equality check (e.g., '3 + 2 == 5'). It checks if the two sides of the equation are equal.\n")
-
+    print("7. Use '==' to represent the equality check (e.g., '3 + 2 == 5'). It checks if the two sides of the equation are equal.")
+    print("8. You can also use parentheses to change the order of operations, e.g., '(3 + 2) * 5 == 25'.\n")
 
 # Convert numbers and operators into an expression with parentheses if needed
 def format_expression(operators, nums):
@@ -80,19 +87,30 @@ def generate_numbers(count, min_number, max_number):
     return [random.randint(min_number, max_number) for _ in range(count)]
 
 # Generate an expression with operators and check if it satisfies the equation, ensuring numbers are not reused
-def find_solutions(nums):
+def find_solutions(nums, max_iterations=1000):
     solutions = []
     num_operators = len(nums) - 1
+    iteration = 0
+
     for operators in itertools.product(ops.keys(), repeat=num_operators):
         for perm_nums in itertools.permutations(nums):
+            iteration += 1
+            if iteration > max_iterations:
+                print(f"Reached maximum iterations ({max_iterations}) without finding sufficient solutions.")
+                return solutions  # 返回已找到的解决方案，或者为空
+
             try:
                 expression = format_expression(operators, perm_nums)
-                if simple_calculate(expression) == simple_calculate('=='.join(map(str, perm_nums))):
-                    solutions.append(expression)
+                equation = f"{expression} == {random.randint(1, 100)}"
+                if parse_and_calculate(equation):
+                    solutions.append(equation)
             except ZeroDivisionError:
                 continue
-            except:
+            except ValueError as ve:
                 continue
+            except Exception as e:
+                continue
+                
     return solutions
 
 # Extract the numbers and operators from the user's input
@@ -100,12 +118,18 @@ def extract_numbers_from_input(user_input):
     return [float(num) for num in re.findall(r'-?\d+\.?\d*', user_input)]
 
 # Ensure the generated set of numbers has a solution, and each number is used only once
-def generate_valid_numbers(count, min_number, max_number):
-    while True:
+def generate_valid_numbers(count, min_number, max_number, max_retries=50):
+    retries = 0
+
+    while retries < max_retries:
+        retries += 1
         numbers = generate_numbers(count, min_number, max_number)
         solutions = find_solutions(numbers)
+
         if solutions:
             return numbers, solutions
+
+    raise RuntimeError("Exceeded maximum retry limit, unable to generate valid numbers with a solution.")
 
 # Main game loop
 def main():
@@ -130,14 +154,20 @@ def main():
             print(f"Invalid input: {e}")
             continue
 
-        numbers, solutions = generate_valid_numbers(num_count, min_number, max_number)
+        try:
+            numbers, solutions = generate_valid_numbers(num_count, min_number, max_number)
+        except RuntimeError as e:
+            print(e)
+            continue
+
         print("\nGenerated numbers:", numbers)
         print("\nYou can use the following operators:")
         print(" '+' for addition")
         print(" '-' for subtraction")
         print(" '*' for multiplication")
         print(" '/' for division")
-        print(" '==' to check if the two sides of the equation are equal (e.g., '3 + 2 == 5')\n")
+        print(" '==' to check if the two sides of the equation are equal (e.g., '3 + 2 == 5')")
+        print(" You can also use parentheses to change the order of operations.\n")
 
         invalid_attempts = 0
         incorrect_attempts = 0
