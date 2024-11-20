@@ -52,7 +52,7 @@ class TestInteractiveMathGame(unittest.TestCase):
         valid_expression_with_parentheses = "8 * (5 - 2) == 24"
         self.assertTrue(parse_and_calculate(valid_expression_with_parentheses))
 
-        invalid_expression_with_parentheses = "8 * (5 - 3) == 24"
+        invalid_expression_with_parentheses = "8 * 5 - 2 == 24"
         self.assertFalse(parse_and_calculate(invalid_expression_with_parentheses))
 
     @patch('EquationMaster.generate_numbers', return_value=[3, 1, 2, 2])
