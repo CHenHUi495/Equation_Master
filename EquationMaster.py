@@ -42,7 +42,7 @@ def evaluate_expression(expr):
     except (SyntaxError, ValueError, TypeError):
         raise ValueError("Invalid mathematical expression")
 
-# 递归计算 AST 节点值
+# 递序计算 AST 节点值
 def evaluate_ast(node):
     if isinstance(node, ast.BinOp):
         left = evaluate_ast(node.left)
@@ -204,12 +204,14 @@ def main():
 
         play_again_attempts = 0
         while play_again_attempts < 3:
-            play_again_input = input("\nDo you want to play again? (yes/no): ").strip().lower()
-            if play_again_input in ['yes', 'no']:
-                play_again = play_again_input == 'yes'
+            play_again_input = input("\nPlay again or game over? (play again/game over): ").strip().lower()
+            if play_again_input in ['play again', 'game over']:
+                if play_again_input == 'game over':
+                    print("Game over.")
+                play_again = play_again_input == 'play again'
                 break
             else:
-                print("Invalid input. Please enter 'yes' or 'no'.")
+                print("Invalid input. Please enter 'play again' or 'game over'.")
                 play_again_attempts += 1
         if play_again_attempts == 3:
             print("Maximum invalid attempts reached. Exiting the game.")
