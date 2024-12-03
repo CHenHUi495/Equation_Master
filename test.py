@@ -99,6 +99,15 @@ class TestInteractiveMathGame(unittest.TestCase):
         """测试程序在带有括号优先级的运算时是否正确运行"""
         expression = "(3 + 2) * 5 == 25"
         self.assertTrue(parse_and_calculate(expression))
+        
+    def test_spaces_handling(self):
+        """测试程序在处理带空格与不带空格的输入时的正确性"""
+        generated_numbers = [3, 2, 6, 2, 7]
+        # 测试含有空格和不含空格的等式是否都被正确解析
+        self.assertTrue(parse_and_calculate("3 + 2 == 6 * 2 - 7"))
+        self.assertTrue(parse_and_calculate("3+2==6*2-7"))
+        self.assertTrue(parse_and_calculate("3 + 2 == 6 * 2 - 7"))
+        self.assertTrue(parse_and_calculate("3+2 == 6*2-7"))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
