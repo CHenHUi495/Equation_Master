@@ -67,7 +67,7 @@ def print_rules():
     print("Welcome to the Interactive Math Calculation Game!")
     print("Game Rules:")
     print("1. You will be given a set of numbers.")
-    print("2. Your task is to place the appropriate operators (addition, subtraction, multiplication, division) between the numbers.")
+    print("2. Your task is to place the appropriate operators (addition, subtraction, multiplication, division) between the numbers in the given order.")
     print("3. The goal is to create a valid mathematical equation using these numbers and operators.")
     print("4. For example, if given numbers are 3, 1, 3, and 5, you can form an equation like '3 - 1 + 3 == 5'.")
     print("5. You must use the operators to make the equation correct.")
@@ -86,30 +86,27 @@ def format_expression(operators, nums):
 def generate_numbers(count, min_number, max_number):
     return [random.randint(min_number, max_number) for _ in range(count)]
 
-# Generate an expression with operators and check if it satisfies the equation, ensuring numbers are not reused
+# Generate an expression with operators and check if it satisfies the equation, ensuring numbers are used in order
 def find_solutions(nums, max_iterations=1000):
     solutions = []
     num_operators = len(nums) - 1
     iteration = 0
 
     for operators in itertools.product(ops.keys(), repeat=num_operators):
-        for perm_nums in itertools.permutations(nums):
-            iteration += 1
-            if iteration > max_iterations:
-                print(f"Reached maximum iterations ({max_iterations}) without finding sufficient solutions.")
-                return solutions  # 返回已找到的解决方案，或者为空
+        iteration += 1
+        if iteration > max_iterations:
+            break
 
-            try:
-                expression = format_expression(operators, perm_nums)
-                equation = f"{expression} == {random.randint(1, 100)}"
-                if parse_and_calculate(equation):
-                    solutions.append(equation)
-            except ZeroDivisionError:
-                continue
-            except ValueError as ve:
-                continue
-            except Exception as e:
-                continue
+        try:
+            expression = format_expression(operators, nums)
+            if evaluate_expression(expression) == evaluate_expression(expression):
+                solutions.append(f"{expression} == {evaluate_expression(expression)}")
+        except ZeroDivisionError:
+            continue
+        except ValueError:
+            continue
+        except Exception:
+            continue
                 
     return solutions
 
@@ -117,7 +114,7 @@ def find_solutions(nums, max_iterations=1000):
 def extract_numbers_from_input(user_input):
     return [float(num) for num in re.findall(r'-?\d+\.?\d*', user_input)]
 
-# Ensure the generated set of numbers has a solution, and each number is used only once
+# Ensure the generated set of numbers has a solution, and each number is used in the given order
 def generate_valid_numbers(count, min_number, max_number, max_retries=50):
     retries = 0
 
@@ -178,11 +175,15 @@ def main():
 
             # 验证玩家输入是否符合规则
             user_numbers = extract_numbers_from_input(user_equation)
-            if sorted(user_numbers) != sorted(numbers):
-                print("Invalid input: You must use all the generated numbers exactly once. Please try again.")
+            if user_numbers != numbers:
+                print("Invalid input: You must use all the generated numbers in the given order. Please try again.")
                 invalid_attempts += 1
                 if invalid_attempts == max_attempts:
                     print("Maximum invalid attempts reached. Game over.")
+                    if solutions:
+                        print("The correct equations are:")
+                        for solution in solutions:
+                            print(solution)
                     break
                 continue
 
@@ -194,8 +195,8 @@ def main():
                     print("The equation is incorrect or not valid. Please try again.")
                     incorrect_attempts += 1
                     if incorrect_attempts == max_attempts:
-                        show_hint = input("Would you like to see the correct equations? (yes/no): ").strip().lower()
-                        if show_hint == 'yes':
+                        print("Maximum incorrect attempts reached.")
+                        if solutions:
                             print("The correct equations are:")
                             for solution in solutions:
                                 print(solution)
