@@ -77,10 +77,16 @@ def print_rules():
 
 # Convert numbers and operators into an expression with parentheses if needed
 def format_expression(operators, nums):
-    expression = str(nums[0])
-    for i in range(1, len(nums)):
-        expression += f" {operators[i-1]} {nums[i]}"
+    # 确保数字和操作符之间有空格
+    tokens = []
+    for i, num in enumerate(nums):
+        tokens.append(str(num))
+        if i < len(operators):
+            tokens.append(operators[i])
+    expression = " ".join(tokens)  # 数字与运算符之间用空格
     return expression
+
+
 
 # Generate random numbers
 def generate_numbers(count, min_number, max_number):
@@ -99,16 +105,29 @@ def find_solutions(nums, max_iterations=1000):
 
         try:
             expression = format_expression(operators, nums)
-            if evaluate_expression(expression) == evaluate_expression(expression):
-                solutions.append(f"{expression} == {evaluate_expression(expression)}")
+
+            # 使用正则表达式提取生成的表达式中的所有数字
+            solution_numbers = [int(num) for num in re.findall(r'-?\d+', expression)]
+
+            # 验证生成的解决方案是否只包含输入的数字
+            if sorted(solution_numbers) != sorted(nums):
+                continue  # 如果包含不在输入集合中的数字，则跳过该解
+
+            # 尝试计算结果
+            result = evaluate_expression(expression)
+            if result is not None:
+                # 不附加结果数值，只附加 '=='
+                # 这样既满足 '==' 的检查，又不增加新的数字导致比较失败
+                solutions.append(f"{expression} ==")
         except ZeroDivisionError:
             continue
         except ValueError:
             continue
         except Exception:
             continue
-                
+
     return solutions
+
 
 # Extract the numbers and operators from the user's input
 def extract_numbers_from_input(user_input):
@@ -175,7 +194,7 @@ def main():
 
             # 验证玩家输入是否符合规则
             user_numbers = extract_numbers_from_input(user_equation)
-            if user_numbers != numbers:
+            if sorted(user_numbers) != sorted(numbers):
                 print("Invalid input: You must use all the generated numbers in the given order. Please try again.")
                 invalid_attempts += 1
                 if invalid_attempts == max_attempts:
