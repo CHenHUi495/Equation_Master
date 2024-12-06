@@ -13,6 +13,7 @@ ops = {
     '/': operator.truediv
 }
 
+
 # 解析和计算简单的数学表达式，不使用 eval。仅支持 +, -, *, / 四种操作符。
 def parse_and_calculate(equation):
     # 验证表达式是否仅包含数字、空格和支持的操作符（包括'=='）
@@ -147,6 +148,7 @@ def find_solutions(nums, max_iterations=1000):
 def extract_numbers_from_input(user_input):
     return [float(num) for num in re.findall(r'-?\d+\.?\d*', user_input)]
 
+
 # Ensure the generated set of numbers has a solution, and each number is used in the given order
 def generate_valid_numbers(count, min_number, max_number, max_retries=50):
     retries = 0
@@ -205,6 +207,10 @@ def main():
 
         while invalid_attempts < max_attempts and incorrect_attempts < max_attempts:
             user_equation = input("Enter your equation using the numbers and operators provided: ")
+            user_equation = re.sub(r'(\+|\-|\*|/)', r' \1 ', user_equation)
+
+            # 现在提取数字会更稳定
+            user_numbers = extract_numbers_from_input(user_equation)
 
             # 验证玩家输入是否符合规则
             user_numbers = extract_numbers_from_input(user_equation)
