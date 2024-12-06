@@ -1,12 +1,13 @@
 import unittest
 from unittest.mock import patch
 from io import StringIO
-from EquationMaster import *  
+from EquationMaster import *  # 导入需要测试的模块
 import time  # 用于控制函数执行时间
 
 class TestInteractiveMathGame(unittest.TestCase):
 
     def setUp(self):
+        # 设置测试用例中使用的有效数字
         self.valid_numbers = [3, 1, 2, 2]
         self.invalid_expression = "3 + 2 == "  # 修正无效表达式，确保格式符合解析要求
         self.valid_expression = "3 + 1 == 2 + 2"
@@ -36,6 +37,9 @@ class TestInteractiveMathGame(unittest.TestCase):
         self.assertTrue(len(solutions) > 0, "No valid solution found for the given numbers.")
         for solution in solutions:
             self.assertIn('==', solution)
+            # 检查生成的解决方案中是否只包含有效的数字
+            solution_numbers = [int(num) for num in re.findall(r'-?\d+', solution)]
+            self.assertCountEqual(solution_numbers, self.valid_numbers, "Solution contains numbers not in the original set")
 
     @patch('EquationMaster.generate_numbers', return_value=[3, 1, 2, 2])
     def test_generate_valid_numbers(self, mock_generate_numbers):
@@ -44,6 +48,9 @@ class TestInteractiveMathGame(unittest.TestCase):
             numbers, solutions = generate_valid_numbers(4, 1, 10, max_retries=50)  # 减少最大重试次数
             self.assertEqual(len(numbers), 4)
             self.assertTrue(len(solutions) > 0)
+            for solution in solutions:
+                solution_numbers = [int(num) for num in re.findall(r'-?\d+', solution)]
+                self.assertCountEqual(solution_numbers, numbers, "Solution contains numbers not in the original set")
         except RuntimeError:
             self.fail("generate_valid_numbers exceeded maximum retry limit")
 
@@ -68,10 +75,9 @@ class TestInteractiveMathGame(unittest.TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("Congratulations, the equation is correct!", output)
 
-    @patch('EquationMaster.generate_numbers', return_value=[3, 1, 2, 2])
-    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 2 +2 == 1', '3 + 2 + 2== 1', '3 + 2 +2 == 1', 'yes','game over'])
+    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 2 +2 == 1', '3 + 2 + 2== 1', '3 + 2 +2 == 1', 'yes', 'game over', 'game over', 'game over'])
     @patch('sys.stdout', new_callable=StringIO)
-    def test_provide_solution_after_max_attempts(self, mock_stdout, mock_input, mock_generate_numbers):
+    def test_provide_solution_after_max_attempts(self, mock_stdout, mock_input):
         """测试在用户三次错误答案后提供正确答案"""
         with patch('sys.exit', side_effect=SystemExit):
             try:
@@ -81,10 +87,9 @@ class TestInteractiveMathGame(unittest.TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("The correct equations are:", output)
 
-    @patch('EquationMaster.generate_numbers', return_value=[3, 1, 2, 2])
-    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 2 ==', '3 + 2 ==', '3 + 2 ==', 'maybe', 'maybe', 'maybe'])
+    @patch('builtins.input', side_effect=['4', '1', '10', '3 + 2 ==', '3 + 2 ==', '3 + 2 ==', 'maybe', 'maybe', 'maybe', 'game over', 'game over'])
     @patch('sys.stdout', new_callable=StringIO)
-    def test_play_again_prompt(self, mock_stdout, mock_input, mock_generate_numbers):
+    def test_play_again_prompt(self, mock_stdout, mock_input):
         """测试用户输入无效时重新游戏的提示，并确保在最大尝试次数后结束"""
         with patch('sys.exit', side_effect=SystemExit):
             try:
