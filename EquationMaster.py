@@ -95,36 +95,50 @@ def generate_numbers(count, min_number, max_number):
 # Generate an expression with operators and check if it satisfies the equation, ensuring numbers are used in order
 def find_solutions(nums, max_iterations=1000):
     solutions = []
-    num_operators = len(nums) - 1
     iteration = 0
+    n = len(nums)
+    
+    # 如果长度小于2，无法构成等式
+    if n < 2:
+        return solutions
 
-    for operators in itertools.product(ops.keys(), repeat=num_operators):
-        iteration += 1
-        if iteration > max_iterations:
-            break
+    # 尝试在 nums 中的任意位置插入 '=='
+    # 例如 nums = [3, 1, 2, 2]
+    # split_pos = 1 -> 左侧: [3], 右侧: [1, 2, 2]
+    # split_pos = 2 -> 左侧: [3, 1], 右侧: [2, 2]
+    # split_pos = 3 -> 左侧: [3, 1, 2], 右侧: [2]
+    for split_pos in range(1, n):
+        left_nums = nums[:split_pos]
+        right_nums = nums[split_pos:]
 
-        try:
-            expression = format_expression(operators, nums)
+        left_ops_count = len(left_nums) - 1
+        right_ops_count = len(right_nums) - 1
 
-            # 使用正则表达式提取生成的表达式中的所有数字
-            solution_numbers = [int(num) for num in re.findall(r'-?\d+', expression)]
+        # 遍历左侧的所有操作符组合
+        for left_ops in itertools.product(ops.keys(), repeat=left_ops_count):
+            left_expr = format_expression(left_ops, left_nums)
+            left_result = evaluate_expression(left_expr)
+            if left_result is None:
+                continue
 
-            # 验证生成的解决方案是否只包含输入的数字
-            if sorted(solution_numbers) != sorted(nums):
-                continue  # 如果包含不在输入集合中的数字，则跳过该解
+            # 遍历右侧的所有操作符组合
+            for right_ops in itertools.product(ops.keys(), repeat=right_ops_count):
+                right_expr = format_expression(right_ops, right_nums)
+                right_result = evaluate_expression(right_expr)
+                if right_result is None:
+                    continue
 
-            # 尝试计算结果
-            result = evaluate_expression(expression)
-            if result is not None:
-                # 不附加结果数值，只附加 '=='
-                # 这样既满足 '==' 的检查，又不增加新的数字导致比较失败
-                solutions.append(f"{expression} ==")
-        except ZeroDivisionError:
-            continue
-        except ValueError:
-            continue
-        except Exception:
-            continue
+                # 检查左右两侧结果是否相等
+                # 同时检查最终从整个表达式中提取的数字集是否与 nums 匹配
+                if left_result == right_result:
+                    combined_expr = f"{left_expr} == {right_expr}"
+                    solution_numbers = [int(num) for num in re.findall(r'-?\d+', combined_expr)]
+                    if sorted(solution_numbers) == sorted(nums):
+                        solutions.append(combined_expr)
+                        
+                iteration += 1
+                if iteration > max_iterations:
+                    return solutions
 
     return solutions
 
